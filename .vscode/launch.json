@@ -1,0 +1,6 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    { "type": "msedge", "request": "launch", "name": "Play Skyline Sprint", "file": "${workspaceFolder}/index.html" }
+  ]
+}

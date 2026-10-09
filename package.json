@@ -1,0 +1,7 @@
+{
+  "name": "skyline-sprint-games",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An original HTML and JavaScript side-scrolling platformer",
+  "scripts": { "test": "node --test tests/engine.test.cjs", "start": "node server.cjs" }
+}
