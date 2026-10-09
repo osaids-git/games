@@ -6,25 +6,25 @@
   <meta name="theme-color" content="#142b32">
   <meta name="description" content="Skyline Sprint: a handcrafted browser platformer across five wild landscapes. Time the spike gates, find fireflies, and reach the lighthouse.">
   <title>Skyline Sprint · Games</title>
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <main>
     <header class="masthead"><a class="brand" href="./" aria-label="Skyline Sprint home"><span class="brand-icon">✦</span> SKYLINE <strong>SPRINT</strong></a><span class="edition">A LITTLE ADVENTURE / 01</span><button id="sound" class="quiet" aria-label="Enable sound" aria-pressed="false">Sound off</button></header>
     <section class="game-shell" aria-label="Platformer game">
-      <div class="hud"><div><span class="eyebrow" id="region-number">CHAPTER 01 / 05</span><strong id="region">Sunlit Meadow</strong></div><div class="hud-stats"><span><i class="spark">✦</i> <b id="coins">0</b><small>FIREFLIES</small></span><span><b id="timer">0:00</b><small>RUN TIME</small></span><button class="quiet" id="pause" aria-label="Pause game">Ⅱ</button></div></div>
-      <div class="boss-ui" id="boss-ui" hidden><span>LIGHTHOUSE GUARDIAN</span><div class="boss-track"><div id="boss-health"></div></div></div>
+      <div class="hud"><div><span class="eyebrow" id="region-number">CHAPTER 01 / 05</span><strong id="region">Sunlit Meadow</strong></div><div class="hud-stats"><span><i class="spark">✦</i> <b id="coins">0</b><small>FIREFLIES</small></span><span><b id="lives">6</b><small>LIVES</small></span><span><b id="timer">0:00</b><small>RUN TIME</small></span><button class="quiet" id="pause" aria-label="Pause game">Ⅱ</button></div></div>
+      <div class="boss-ui" id="boss-ui" hidden><span id="boss-name">MEADOW SENTINEL</span><div class="boss-track"><div id="boss-health"></div></div></div>
       <canvas id="game" width="1200" height="675" tabindex="0" aria-label="Side-scrolling platformer. Move with arrow keys or A and D. Jump once with Space, W, or Up. Fire with F or J. In the first chapter, wait for tall spike gates to retract and run through them."></canvas>
       <div class="progress-track"><div id="progress"></div></div>
       <div id="notice" role="status" aria-live="polite"></div>
       <div class="overlay" id="overlay">
-        <div class="intro"><span class="pill">FIVE LANDSCAPES. ONE LIGHTHOUSE.</span><h1>A little leap.<br>A big <em>adventure.</em></h1><p>Time the tall spike gates in the first chapter.<br>Jump once, fire sparks with F, and face the guardian.</p><div class="actions"><button class="primary" id="start">Let’s go <span>↗</span></button><button id="continue" class="secondary" hidden>Continue run</button></div><div class="intro-meta"><span>◷ &nbsp; ABOUT 7–12 MINUTES</span><span>⚑ &nbsp; CHECKPOINTS ALONG THE WAY</span></div></div>
+        <div class="intro"><span class="pill">FIVE LANDSCAPES. FIVE BOSSES.</span><h1>A little leap.<br>A big <em>adventure.</em></h1><p>Jump holes, dodge spikes, and defeat each chapter boss.<br>Six lives. After chapter one, the Shadow Hunter follows.</p><div class="actions"><button class="primary" id="start">Let’s go <span>↗</span></button><button id="continue" class="secondary" hidden>Continue run</button></div><div class="intro-meta"><span>◷ &nbsp; ABOUT 7–12 MINUTES</span><span>⚑ &nbsp; CHECKPOINTS ALONG THE WAY</span></div></div>
       </div>
       <div class="touch-controls" aria-label="Touch controls"><div><button data-key="left" aria-label="Move left">←</button><button data-key="right" aria-label="Move right">→</button></div><div><button data-key="shoot" aria-label="Shoot sparks">✦</button><button data-key="jump" aria-label="Jump">↑</button></div></div>
     </section>
-    <footer><div class="controls"><span><kbd>A</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>→</kbd> MOVE</span><span><kbd>SPACE</kbd> JUMP ONCE</span><span><kbd>F</kbd> / <kbd>J</kbd> SHOOT</span><span><kbd>P</kbd> PAUSE</span><span><kbd>R</kbd> CHECKPOINT</span></div><span class="footer-note">Take the scenic route. Every spark counts.</span></footer>
-    <p class="accessible-help">Reach the lighthouse at the end of five chapters. The first chapter's tall rotating and pop-up spike gates cannot be cleared by jumping. Wait for them to retract, then run through. Collect optional fireflies, use springs, shoot ranged enemies, and defeat the lighthouse guardian. Flags save progress in this browser. Falling returns you to the last flag with unlimited retries.</p>
+    <footer><div class="controls"><span><kbd>A</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>→</kbd> MOVE</span><span><kbd>SPACE</kbd> JUMP ONCE</span><span><kbd>F</kbd> / <kbd>J</kbd> SHOOT</span><span><kbd>P</kbd> PAUSE</span><span><kbd>R</kbd> CHECKPOINT (−1 LIFE)</span></div><span class="footer-note">Take the scenic route. Every spark counts.</span></footer>
+    <p class="accessible-help">Reach the lighthouse at the end of five chapters. Jump over extra ground spikes and holes. The first chapter's tall rotating and pop-up spike gates cannot be cleared by jumping; wait for them to retract, then run through. Shoot each chapter boss to advance. The last chapter boss has 35 health. After the first chapter, the Shadow Hunter follows and fires until defeated by 20 spark hits. You have six lives per run; falling or taking a hit uses one. Flags save progress and remaining lives in this browser.</p>
   </main>
-  <script src="level.js?v=3"></script><script src="engine.js?v=3"></script><script src="game.js?v=3"></script>
+  <script src="level.js?v=4"></script><script src="engine.js?v=4"></script><script src="game.js?v=4"></script>
 </body>
 </html>

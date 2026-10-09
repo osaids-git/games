@@ -6,20 +6,21 @@ An original side-scrolling platformer built with HTML, CSS, and vanilla JavaScri
 
 Open `index.html` in a browser. No installation or build is required. For a local server, run `npm start` and visit http://localhost:4173.
 
-**Controls:** A/D or Left/Right to move; Space, W, or Up for one jump. Midair jumps are disabled. Hold F or J to fire sparks in the direction you're facing. P or Escape pauses. R returns to your checkpoint. Touch buttons are available on phones and tablets. Sound is optional.
+**Controls:** A/D or Left/Right to move; Space, W, or Up for one jump. Midair jumps are disabled. Hold F or J to fire sparks in the direction you're facing. P or Escape pauses. R returns to your checkpoint and uses one life. Touch buttons are available on phones and tablets. Sound is optional.
 
 ## Adventure
 
-- Five chapters, 70 obstacle sections, and 36 checkpoints, including one at the final arena.
+- Five chapters, 70 obstacle sections, and 40 checkpoints, including one at each boss arena.
 - In Sunlit Meadow, tall rotating and pop-up spike gates block the route. They extend above the highest reachable jump. Watch their warning glow, wait for them to retract, and run through the opening.
-- Single jumps, moving platforms, thorn patches, spinning saws, springboards, and cracked platforms that crumble beneath you.
+- Single jumps, moving platforms, more ground-level spike patches and holes, spinning saws, springboards, and cracked platforms that crumble beneath you. The additional ground hazards do not add raised platforms.
 - Beetles can be stomped or shot. A few ranged enemies fire at you and take two spark hits to defeat.
 - Whispering Woods, the second chapter, has 70 shootable enemies across its 14 sections—five times its former density. Four additional beetles are spaced through each section.
-- The lighthouse guardian waits at the end of Starlight Coast. Dodge its volleys and land seven hits before reaching the lighthouse.
+- Each chapter ends with a boss that must be defeated to advance. The last guardian has 35 health, five times the previous final boss's seven.
+- Once the first chapter boss falls, the Shadow Hunter follows and shoots until it is defeated. It takes exactly 20 spark hits.
 - Optional fireflies encourage exploring upper routes.
-- Unlimited retries. Checkpoint progress saves automatically in this browser when storage is available; choose **Continue run** on the title screen to resume.
+- A run starts with six lives. Falling or taking a hit consumes one; zero lives ends the run. Checkpoint progress and remaining lives save automatically in this browser when storage is available; choose **Continue run** on the title screen to resume.
 - Finishing records your best time. A new run replaces checkpoint progress.
-- Intended first-play duration: about 7–12 minutes, varying with skill and exploration. Course gaps are sized for single jumps; an automated traversal test covers the whole route, including the spike gates and boss. This is a design estimate, not a measured human playtest.
+- Intended first-play duration: about 7–12 minutes, varying with skill and exploration. Course gaps are sized for single jumps. An automated traversal test covers the whole route with an extended life allowance; it verifies reachability and pacing, not that typical players can finish within six lives. Human difficulty has not been measured.
 
 ## Work in VS Code
 

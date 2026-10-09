@@ -10,7 +10,7 @@
   let W=1200;const H=675;
   function resize(){W=window.innerWidth<500&&window.innerHeight>window.innerWidth?540:1200;canvas.width=W;canvas.height=H;}
   resize();window.addEventListener('resize',resize);
-  if(saved&&saved.version===1)$('continue').hidden=false;
+  if(saved&&(saved.version===1||saved.version===2))$('continue').hidden=false;
   function tone(freq,duration=.09,type='sine',volume=.035) {
     if(!sound)return;
     try {audio=audio||new(window.AudioContext||window.webkitAudioContext)();audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.65,audio.currentTime+duration);g.gain.setValueAtTime(volume,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration);}catch{}
@@ -24,7 +24,7 @@
     notice(resume?'Welcome back. Your checkpoint is ready.':'Move → · Space to jump · F to shoot · Wait for tall spikes to retract');
   }
   function pause() {
-    if(mode==='title'||mode==='won')return;
+    if(mode==='title'||mode==='won'||mode==='gameover')return;
     if(mode==='paused'){mode='playing';$('overlay').hidden=true;canvas.focus();last=performance.now();}
     else {mode='paused';keys={left:false,right:false,shoot:false};jump=false;$('overlay').hidden=false;$('overlay').innerHTML='<div class="intro"><span class="pill">TAKE A BREATHER</span><h1>The horizon<br>can <em>wait.</em></h1><p>Your adventure is paused.<br>Press P or Escape to keep going.</p><button class="primary" id="resume">Keep going ↗</button><button class="secondary" id="restart">New run</button></div>';$('resume').onclick=pause;$('restart').onclick=()=>{if(confirm('Start a new run? Your saved checkpoint will be replaced.'))start();};}
     $('pause').textContent=mode==='paused'?'▶':'Ⅱ';$('pause').setAttribute('aria-label',mode==='paused'?'Resume game':'Pause game');
@@ -36,7 +36,7 @@
     const a=actionFor(e.code);
     if(a&&mode==='playing'){e.preventDefault();if(a==='jump'){if(!e.repeat)jump=true;}else keys[a]=true;}
     if(!e.repeat&&(e.code==='KeyP'||e.code==='Escape'))pause();
-    if(!e.repeat&&e.code==='KeyR'&&mode==='playing'){game.respawn();notice('Back to your checkpoint');}
+    if(!e.repeat&&e.code==='KeyR'&&mode==='playing'){game.respawn();notice('One life used · Back to your checkpoint');}
   });
   window.addEventListener('keyup',e=>{const a=actionFor(e.code);if(a&&a!=='jump')keys[a]=false;});
   window.addEventListener('blur',()=>{if(mode==='playing')pause();});
@@ -57,15 +57,21 @@
     if(event==='enemyShoot'||event==='bossShoot')tone(155,.08,'sawtooth',.008);
     if(event==='spring'){tone(420,.16);burst(game.player.x+15,game.player.y+44,'#b8f5dd',14);}
     if(event==='crumble')tone(120,.1,'triangle',.015);
-    if(event==='bossHit'){tone(310,.15,'square',.025);burst(game.level.boss.x+40,game.level.boss.y+40,'#ffe8ab',18);}
-    if(event==='bossDefeated'){tone(920,.5);notice('Guardian defeated! Reach the lighthouse →');burst(game.level.boss.x+40,game.level.boss.y+40,'#fff2b5',55);}
-    if(event==='respawn'){tone(130,.2);notice('A little stumble. Try again!');camera=Math.max(0,game.player.x-W*.28);saved=game.save();write(STORE,saved);}
+    if(event.type==='bossHit'){const b=game.level.bosses[event.region];tone(310,.15,'square',.025);burst(b.x+40,b.y+40,'#ffe8ab',18);}
+    if(event.type==='bossDefeated'){const b=game.level.bosses[event.region];tone(920,.5);notice(event.region===4?'Guardian defeated! Reach the lighthouse →':'Boss defeated! Keep going →');burst(b.x+40,b.y+40,'#fff2b5',55);}
+    if(event==='hunterAwakes')notice('The Shadow Hunter is following you! Turn and fire to stop it.');
+    if(event==='hunterHit'){tone(260,.12,'square',.02);const h=game.level.pursuer;burst(h.x+34,h.y+40,'#dcbcf5',9);}
+    if(event==='hunterDefeated'){tone(860,.45);notice('Shadow Hunter defeated!');}
+    if(event==='respawn'){tone(130,.2);notice(`${game.lives} lives left · Try again!`);camera=Math.max(0,game.player.x-W*.28);saved=game.save();write(STORE,saved);}
+    if(event==='gameOver')gameOver();
     if(event==='checkpoint'){tone(660,.3);saved=game.save();write(STORE,saved);notice('⚑ Checkpoint saved · Keep your spark');burst(game.player.x,game.player.y,'#d8f291',22);}
     if(event==='win')win();
   }}
   function win(){mode='won';try{localStorage.removeItem(STORE);}catch{}saved=null;
     const best=read('skyline-sprint-best');if(!best||game.time<best.time)write('skyline-sprint-best',{time:game.time,coins:game.collected.size});
     $('overlay').hidden=false;$('overlay').innerHTML=`<div class="intro"><span class="pill">THE LIGHT IS HOME</span><h1>You reached<br>the <em>skyline.</em></h1><p>Five landscapes. A thousand little leaps.<br>${format(game.time)} · ${game.collected.size} fireflies · ${game.deaths} retries</p><button class="primary" id="again">One more adventure ↗</button><div class="intro-meta">${!best||game.time<best.time?'YOUR FASTEST FINISH ✦':`BEST TIME ${format(best.time)}`}</div></div>`;$('again').onclick=()=>start();tone(980,.5);}
+  function gameOver(){mode='gameover';try{localStorage.removeItem(STORE);}catch{}saved=null;keys={left:false,right:false,shoot:false};
+    $('overlay').hidden=false;$('overlay').innerHTML='<div class="intro"><span class="pill">OUT OF LIVES</span><h1>Try the trail<br><em>again.</em></h1><p>Six lives are available each run.<br>Use flags and watch the hazards.</p><button class="primary" id="again">Start a new run ↗</button></div>';$('again').onclick=()=>start();tone(115,.4);}
   function round(x,y,w,h,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
   function poly(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
   function tree(x,y,scale,color){ctx.fillStyle='#35594d';ctx.fillRect(x-5*scale,y-95*scale,10*scale,95*scale);poly([[x-45*scale,y-40*scale],[x,y-160*scale],[x+45*scale,y-40*scale]],color);poly([[x-35*scale,y-90*scale],[x,y-190*scale],[x+35*scale,y-90*scale]],color);}
@@ -125,13 +131,22 @@
     for(const e of game.level.shooters.filter(visible)){if(e.dead)continue;round(e.x,e.y,e.w,e.h,8,'#775e82');round(e.x+6,e.y+8,e.w-12,15,6,'#e6b1b2');ctx.fillStyle='#2c334b';ctx.fillRect(e.x+(p.x<e.x?3:27),e.y+16,10,7);round(e.x+5,e.y+35,28,7,3,'#423f5f');}
     for(const shot of game.shots.filter(visible)){round(shot.x-3,shot.y-2,shot.w+6,shot.h+4,6,'#e7f59966');round(shot.x,shot.y,shot.w,shot.h,4,'#f7f7b7');}
     for(const shot of game.enemyShots.filter(visible)){ctx.fillStyle='#fac2a8';ctx.beginPath();ctx.arc(shot.x+6,shot.y+6,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffefe0';ctx.beginPath();ctx.arc(shot.x+6,shot.y+6,3,0,Math.PI*2);ctx.fill();}
-    const boss=game.level.boss;
-    if(boss.x<camera+W+100&&boss.x+boss.w>camera-100&&!boss.dead){
+    for(const boss of game.level.bosses)if(boss.x<camera+W+100&&boss.x+boss.w>camera-100&&!boss.dead){
       ctx.save();if(boss.invulnerable>0&&Math.floor(visualTime*18)%2)ctx.globalAlpha=.45;
-      round(boss.x,boss.y,boss.w,boss.h,21,'#57486e');round(boss.x+9,boss.y+18,64,42,17,'#aa8096');
+      const coats=['#50695c','#486c66','#895b51','#5a6287','#57486e'],faces=['#aac9a2','#93c5b7','#e0a77f','#aab8d9','#aa8096'];
+      round(boss.x,boss.y,boss.w,boss.h,21,coats[boss.region]);round(boss.x+9,boss.y+18,64,42,17,faces[boss.region]);
       ctx.fillStyle='#fff4bd';ctx.beginPath();ctx.arc(boss.x+27,boss.y+41,8,0,Math.PI*2);ctx.arc(boss.x+55,boss.y+41,8,0,Math.PI*2);ctx.fill();
       poly([[boss.x+10,boss.y+8],[boss.x+18,boss.y-24],[boss.x+32,boss.y+7]],'#e5bb94');poly([[boss.x+50,boss.y+7],[boss.x+64,boss.y-24],[boss.x+73,boss.y+8]],'#e5bb94');
-      round(boss.x-10,boss.y+61,102,18,8,'#76617d');round(boss.x+18,boss.y+89,17,17,5,'#392e4c');round(boss.x+50,boss.y+89,17,17,5,'#392e4c');ctx.restore();
+      round(boss.x-10,boss.y+61,102,18,8,coats[boss.region]);round(boss.x+18,boss.y+89,17,17,5,'#392e4c');round(boss.x+50,boss.y+89,17,17,5,'#392e4c');ctx.restore();
+      ctx.globalAlpha=.22+.1*Math.sin(visualTime*5);round(boss.x+338,320,8,230,4,'#fff2ae');ctx.globalAlpha=1;
+    }
+    const hunter=game.level.pursuer;
+    if(hunter.active&&!hunter.dead&&visible(hunter)){
+      ctx.save();if(hunter.invulnerable>0&&Math.floor(visualTime*20)%2)ctx.globalAlpha=.45;
+      round(hunter.x,hunter.y,hunter.w,hunter.h,19,'#332e57');round(hunter.x+8,hunter.y+17,hunter.w-16,37,16,'#766891');
+      poly([[hunter.x+5,hunter.y+15],[hunter.x+12,hunter.y-23],[hunter.x+28,hunter.y+14]],'#b391cc');
+      poly([[hunter.x+40,hunter.y+14],[hunter.x+55,hunter.y-23],[hunter.x+63,hunter.y+15]],'#b391cc');
+      round(hunter.x+13,hunter.y+36,13,8,4,'#ffbfc5');round(hunter.x+42,hunter.y+36,13,8,4,'#ffbfc5');ctx.restore();
     }
     for(const c of game.level.coins){if(c.x<camera-50||c.x>camera+W+50||game.collected.has(c.id))continue;
       const y=c.y+Math.sin(visualTime*3+c.id)*4;ctx.fillStyle='#edf59d20';ctx.beginPath();ctx.arc(c.x,y,15,0,Math.PI*2);ctx.fill();poly([[c.x,y-8],[c.x+4,y-2],[c.x+8,y],[c.x+3,y+3],[c.x,y+8],[c.x-3,y+3],[c.x-8,y],[c.x-3,y-3]],'#eff7b0');}
@@ -145,8 +160,10 @@
     round(-10,8,8,13+stride,3,'#233b43');round(3,8,8,13-stride,3,'#233b43');round(-12,-7,24,22,6,'#70b9ab');round(-12,-22,24,20,8,'#eac9a1');round(-14,-23,27,8,5,'#254d54');ctx.fillStyle='#233b43';ctx.fillRect(6,-13,3,4);round(10,0,8,12,3,'#eac9a1');ctx.restore();
     for(const q of particles){ctx.globalAlpha=Math.max(0,q.life/.6);ctx.fillStyle=q.color;ctx.fillRect(q.x,q.y,4,4);}ctx.globalAlpha=1;
     ctx.restore();
-    $('region-number').textContent=`CHAPTER ${String(region+1).padStart(2,'0')} / 05`;$('region').textContent=t.name;$('coins').textContent=game.collected.size;$('timer').textContent=format(game.time);$('progress').style.width=`${Math.min(100,p.x/game.level.finish*100)}%`;
-    $('boss-ui').hidden=boss.dead||Math.abs(p.x-boss.x)>850;$('boss-health').style.width=`${Math.max(0,boss.health/boss.maxHealth*100)}%`;
+    $('region-number').textContent=`CHAPTER ${String(region+1).padStart(2,'0')} / 05`;$('region').textContent=t.name;$('coins').textContent=game.collected.size;$('lives').textContent=game.lives;$('timer').textContent=format(game.time);$('progress').style.width=`${Math.min(100,p.x/game.level.finish*100)}%`;
+    const activeBoss=game.level.bosses.find(b=>!b.dead&&Math.abs(p.x-b.x)<850)||(hunter.active&&!hunter.dead&&Math.abs(p.x-hunter.x)<850?hunter:null);
+    $('boss-ui').hidden=!activeBoss;
+    if(activeBoss){$('boss-name').textContent=activeBoss.name;$('boss-health').style.width=`${Math.max(0,activeBoss.health/activeBoss.maxHealth*100)}%`;}
   }
   function frame(now){
     const dt=Math.min(.05,(now-(last||now))/1000);last=now;visualTime+=dt;

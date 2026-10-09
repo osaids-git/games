@@ -5,16 +5,20 @@ const L=require('../level.js');
 const step=(g,count,input={})=>{for(let i=0;i<count;i++)g.step(1/120,input);};
 
 test('five chapters have a 5–15 minute minimum traversal and safe checkpoints',()=>{
-  const level=L.buildLevel();assert.equal(L.themes.length,5);assert.equal(level.checkpoints.length,36);
+  const level=L.buildLevel();assert.equal(L.themes.length,5);assert.equal(level.checkpoints.length,40);
   assert.ok(level.finish/L.SPEED>=300&&level.finish/L.SPEED<=900);
   for(const c of level.checkpoints)assert.ok(level.platforms.some(a=>a.ground&&c.x>=a.x&&c.x+30<=a.x+a.w));
   for(const h of level.hazards)assert.ok(level.platforms.some(a=>a.ground&&h.x>=a.x&&h.x+h.w<=a.x+a.w));
   assert.ok(level.saws.length>=10&&level.springs.length>=10);
   assert.ok(level.platforms.some(a=>a.crumbling));
-  assert.equal(level.shooters.length,10);assert.equal(level.boss.maxHealth,7);
+  assert.equal(level.shooters.length,10);assert.equal(level.bosses.length,5);
+  assert.deepEqual(level.bosses.map(b=>b.maxHealth),[5,6,7,8,35]);
+  assert.equal(level.bosses[4].maxHealth,7*5);
   assert.equal(level.spikeGates.length,7);
   assert.ok(level.spikeGates.every(g=>g.x<L.ROOM*L.ROOMS_PER_REGION&&g.maxH>=390));
   assert.ok(level.platforms.filter(a=>a.ground).every(a=>a.w>=0));
+  assert.ok(level.hazards.length>90);
+  for(let region=0;region<5;region++)assert.ok(level.bosses[region].x>=region*L.ROOM*L.ROOMS_PER_REGION);
   const chapter2Start=L.ROOM*L.ROOMS_PER_REGION,chapter2End=chapter2Start*2;
   const chapter2Targets=[...level.enemies,...level.shooters].filter(e=>e.x>=chapter2Start&&e.x<chapter2End);
   assert.equal(chapter2Targets.length,70);
@@ -43,6 +47,14 @@ test('first-chapter spike gates are too high to jump and open on a cycle',()=>{
 test('falling and thorn collisions return to the saved flag',()=>{
   const g=new Game();g.player.y=810;g.step(1/120);assert.equal(g.deaths,1);assert.equal(g.player.x,g.checkpoint.x);
   const h=g.level.hazards[0];Object.assign(g.player,{x:h.x,y:506,invincible:0});g.step(1/120);assert.equal(g.deaths,2);
+});
+test('six lives are available and persist at checkpoints',()=>{
+  const g=new Game();assert.equal(g.lives,6);
+  g.respawn();assert.equal(g.lives,5);
+  assert.equal(new Game(g.save()).lives,5);
+  for(let n=0;n<5;n++)g.respawn();
+  assert.equal(g.lives,0);assert.ok(g.gameOver);assert.ok(g.events.includes('gameOver'));
+  const time=g.time;g.step(1/120,{right:true});assert.equal(g.time,time);
 });
 test('stomping a beetle bounces the player',()=>{
   const g=new Game(),e=g.level.enemies[0];Object.assign(g.player,{x:e.x,y:e.y-44,vy:200});g.step(1/120);
@@ -73,36 +85,49 @@ test('the player can defeat a firing enemy with sparks',()=>{
   const g=new Game(),shooter=g.level.shooters[0];
   Object.assign(g.player,{x:shooter.x-200,y:506,grounded:true,invincible:100});
   step(g,180,{shoot:true});assert.ok(shooter.dead);assert.ok(g.events.includes('shoot'));
-  const another=g.level.shooters[1];another.cooldown=0;Object.assign(g.player,{x:another.x-200,y:506});g.step(1/120);
+  const another=g.level.shooters[1];another.cooldown=0;Object.assign(g.player,{x:another.x-200,y:506,vy:0,grounded:true,invincible:100});g.step(1/120);
   assert.ok(g.enemyShots.length>0);
 });
-test('the guardian fires, takes multiple hits, and gates the finish',()=>{
-  const g=new Game(),boss=g.level.boss;
-  Object.assign(g.player,{x:g.level.finish,y:506,grounded:true,invincible:100});g.step(1/120);
-  assert.equal(g.won,false);
-  Object.assign(g.player,{x:boss.x-260,y:506,grounded:true,face:1});
-  step(g,800,{shoot:true});assert.ok(boss.dead,`Boss health ${boss.health}`);assert.ok(g.events.includes('bossShoot'));
-  g.player.x=g.level.finish;g.player.y=506;g.player.vy=0;g.step(1/120);
-  assert.ok(g.won);
+test('each chapter boss gates progress; final boss has five times the original health',()=>{
+  const g=new Game();
+  for(const boss of g.level.bosses){
+    Object.assign(g.player,{x:boss.x-260,y:506,grounded:true,face:1,invincible:100});
+    step(g,1800,{shoot:true});assert.ok(boss.dead,`Boss ${boss.region} health ${boss.health}`);
+    assert.ok(g.events.some(e=>e.type==='bossDefeated'&&e.region===boss.region));
+  }
+  Object.assign(g.player,{x:g.level.finish,y:506,grounded:true,vy:0});g.step(1/120);assert.ok(g.won);
 });
-test('a running jump controller can finish every chapter',()=>{
-  const g=new Game();const dt=1/120;
-  for(let frame=0;frame<120*900&&!g.won;frame++) {
+test('the Shadow Hunter starts after chapter one, follows, shoots, and falls to 20 hits',()=>{
+  const g=new Game(),first=g.level.bosses[0],h=g.level.pursuer;
+  assert.equal(h.active,false);
+  first.health=1;Object.assign(g.player,{x:first.x-180,y:506,grounded:true,invincible:100});
+  step(g,80,{shoot:true});assert.ok(first.dead);assert.ok(h.active);
+  const oldX=h.x;Object.assign(g.player,{x:h.x+250,y:506,grounded:true,invincible:100});h.cooldown=0;
+  g.step(1/120);assert.ok(h.x>oldX);assert.ok(g.enemyShots.length>0);
+  h.x=g.player.x+180;g.player.face=1;g.player.vy=0;g.player.grounded=true;
+  step(g,1000,{shoot:true});assert.ok(h.dead,`Hunter health ${h.health}`);
+  assert.equal(h.maxHealth,20);assert.equal(g.events.filter(e=>e==='hunterHit').length,20);assert.ok(g.events.includes('hunterDefeated'));
+});
+test('a running jump controller can traverse every chapter with retries',()=>{
+  const g=new Game();g.lives=100;const dt=1/120;
+  for(let frame=0;frame<120*900&&!g.won&&!g.gameOver;frame++) {
     const p=g.player;
     const floor=g.level.platforms.find(a=>p.grounded&&p.x+p.w>a.x&&p.x<a.x+a.w&&Math.abs(p.y+p.h-a.y)<2);
     const edge=floor?floor.x+floor.w-p.x:Infinity;
     const danger=g.level.hazards.some(h=>h.x-p.x>0&&h.x-p.x<125);
-    const enemy=g.level.enemies.some(e=>!e.dead&&e.x-p.x>-e.w&&e.x-p.x<120&&Math.abs(e.y-p.y)<80);
+    const enemy=[...g.level.enemies,...g.level.shooters].some(e=>!e.dead&&e.x-p.x>-e.w&&e.x-p.x<140&&Math.abs(e.y-p.y)<80);
     const saw=g.level.saws.some(s=>s.x-p.x>-s.w&&s.x-p.x<125&&Math.abs(s.y-p.y)<90);
     const gate=g.level.spikeGates.find(a=>a.x-p.x>0&&a.x-p.x<170);
     const gateCycle=gate&&(g.time+gate.phase)%gate.period;
     const opening=gate&&(gate.kind==='rotor'?1.2:1.5);
     const gateWait=gate&&!(gateCycle<opening&&opening-gateCycle>(gate.x-p.x+gate.w+35)/L.SPEED+.1);
     const jump=p.grounded&&(edge<25||danger||enemy||saw);
-    const right=(g.level.boss.dead||p.x<g.level.boss.x-240)&&!gateWait;
+    const boss=g.level.bosses.find(b=>!b.dead);
+    const right=(!boss||p.x<boss.x-240)&&!gateWait;
     g.step(dt,{right,jump,shoot:true});g.events.length=0;
   }
-  assert.ok(g.won,`Stopped at ${g.player.x}, checkpoint ${g.checkpoint.n}, retries ${g.deaths}`);
+  assert.ok(g.won,`Stopped at ${g.player.x}, checkpoint ${g.checkpoint.n}, retries ${g.deaths}, lives ${g.lives}, boss ${g.level.bosses.find(b=>!b.dead)?.region}`);
+  assert.ok(g.deaths<100);
   assert.ok(g.time>=300&&g.time<=900,`Finish took ${g.time}s`);
   console.log(`Full-course simulation: ${g.time.toFixed(1)} seconds, ${g.deaths} retries, ${g.collected.size} fireflies`);
 });
