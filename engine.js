@@ -40,9 +40,8 @@
       }
       if(input.jump)p.buffer=.14;else p.buffer=Math.max(0,p.buffer-dt);
       p.coyote=p.grounded?.12:Math.max(0,p.coyote-dt);
-      if(p.buffer>0&&(p.coyote>0||p.jumps<2)) {
-        if(p.coyote>0)p.jumps=0;
-        p.vy=p.jumps===0?-620:-550;p.jumps++;p.grounded=false;p.coyote=0;p.buffer=0;this.events.push('jump');
+      if(p.buffer>0&&p.coyote>0) {
+        p.vy=-620;p.jumps=1;p.grounded=false;p.coyote=0;p.buffer=0;this.events.push('jump');
       }
       const dir=(input.right?1:0)-(input.left?1:0), target=dir*L.SPEED;
       p.vx+=(target-p.vx)*Math.min(1,dt*(p.grounded?17:10));if(dir)p.face=dir;
@@ -81,11 +80,19 @@
         if(Math.abs(s.x-p.x)>100)continue;
         s.y=s.baseY+Math.sin(this.time*2.4+s.phase)*28;
       }
+      for(const gate of this.level.spikeGates){
+        if(Math.abs(gate.x-p.x)>2000)continue;
+        const cycle=(this.time+gate.phase)%gate.period;
+        const rise=gate.kind==='rotor'?1.2:1.5,top=gate.kind==='rotor'?1.45:1.8,fall=gate.kind==='rotor'?3.6:3.5;
+        const fraction=cycle<rise?0:cycle<top?(cycle-rise)/(top-rise):cycle<fall?1:Math.max(0,(gate.period-cycle)/(gate.period-fall));
+        gate.h=gate.maxH*fraction;gate.y=gate.baseY-gate.h;gate.warning=cycle>=rise-.45&&cycle<rise;
+        if(gate.h>12&&overlap(p,gate)){this.respawn();this.events.push('gateHit');return;}
+      }
       for(const e of this.level.shooters){
         if(e.dead||Math.abs(e.x-p.x)>800)continue;
         e.cooldown-=dt;
-        if(e.cooldown<=0&&Math.abs(e.x-p.x)<620){
-          this.fireAt(e.x+e.w/2,e.y+12,p.x+p.w/2,p.y+18,250);e.cooldown=1.65;this.events.push('enemyShoot');
+        if(e.cooldown<=0&&Math.abs(e.x-p.x)<620&&p.grounded){
+          this.fireAt(e.x+e.w/2,e.y+12,p.x+p.w/2,p.y+18,220);e.cooldown=2;this.events.push('enemyShoot');
         }
         if(p.invincible<=0&&overlap(p,e)){this.respawn();return;}
       }

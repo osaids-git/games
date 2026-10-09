@@ -9,17 +9,17 @@
     { name: 'Starlight Coast', sky: ['#172f50','#697d95'], mountain: '#354d6a', far: '#4c6880', soil: '#2f4859', grass: '#8dbabc', accent: '#ffdf91' }
   ];
   function buildLevel() {
-    const platforms = [], hazards = [], enemies = [], shooters = [], saws = [], springs = [], coins = [], checkpoints = [], signs = [];
+    const platforms = [], hazards = [], enemies = [], shooters = [], saws = [], springs = [], spikeGates = [], coins = [], checkpoints = [], signs = [];
     const ground = (x,w) => platforms.push({x,y:550,w,h:150,ground:true});
     const ledge = (x,y,w=150,moving=false,crumbling=false) => platforms.push({x,y,w,h:22,ground:false,moving,crumbling,crumbleTimer:0,restoreTimer:0,baseX:x,baseY:y,phase:x/137});
     const spark = (x,y) => coins.push({x,y,id:coins.length});
     for (let region = 0; region < themes.length; region++) {
       for (let room = 0; room < ROOMS_PER_REGION; room++) {
         const n = region * ROOMS_PER_REGION + room, x = n * ROOM;
-        // Every room has a safe entry and exit. Gaps fit within one running jump.
+        // Every room has a safe entry and exit. Gaps fit within one jump.
         const pattern = n % 7;
         const arena = region===4 && room===13;
-        const gaps = arena ? [] : pattern === 2 ? [[650,200],[1130,180]] : pattern === 4 ? [[730,230]] : [[850,160 + region*12]];
+        const gaps = arena ? [] : pattern === 2 ? [[650,145],[1130,140]] : pattern === 4 ? [[730,150]] : [[850,150]];
         let cursor = x;
         for (const [offset,width] of gaps) { ground(cursor,x+offset-cursor); cursor=x+offset+width; }
         ground(cursor,x+ROOM-cursor);
@@ -37,23 +37,34 @@
           ledge(x+360,440,200); ledge(x+690,355,190); ledge(x+990,400,160); ledge(x+1250,465,140);
         }
         if (n>0 && !arena) {
-          hazards.push({x:x+540,y:532,w:50+region*7,h:18});
+          if(region===0 || n%4!==2) hazards.push({x:x+(region===0?540:450),y:532,w:50+region*7,h:18});
           if (pattern===3 || pattern===5) hazards.push({x:x+1280,y:532,w:65,h:18});
           if (room===6 || room===10) shooters.push({x:x+1370,y:505,w:38,h:45,cooldown:1.2,health:2,dead:false});
           else enemies.push({x:x+1190,y:526,w:32,h:24,min:x+1050,max:x+1430,speed:55+region*10,dir:1});
           if (region>=1 && n%4===2) saws.push({x:x+310,y:505,w:38,h:38,baseY:505,phase:n});
           if (region>=1 && n%3===1) springs.push({x:x+390,y:532,w:48,h:18});
         }
+        if (region===0 && room%2===0) {
+          const rotor=room%4===0, gateX=x+(room===0?690:235);
+          spikeGates.push({x:gateX,y:160,w:52,h:390,maxH:390,baseY:550,kind:rotor?'rotor':'pop',period:3.9,phase:room===0?2.1:room*.43,warning:false});
+        }
+        if (region===1) {
+          const extraPositions=[185,(n%3===1?525:400),590,1480];
+          for(const offset of extraPositions){
+            const start=x+offset;
+            enemies.push({x:start,y:526,w:32,h:24,min:start-10,max:start+10,speed:35+room%3*8,dir:1});
+          }
+        }
         for (let c=0;c<5;c++) spark(x+300+c*55,495);
         spark(x+450,410); spark(x+645,320); spark(x+920,300); spark(x+1220,395);
         if (room%2===0 || arena) checkpoints.push({x:x+110,y:550,region,room,n});
-        if (room===0) signs.push({x:x+230,text:['Move → · Space twice to double jump · F to fire','Springs launch you. Cracked platforms crumble.','Watch for spinning saws and ranged enemies.','Blue platforms drift. Ride them across.','The lighthouse guardian waits in the final arena.'][region]});
+        if (room===0) signs.push({x:x+230,text:['Space = one jump · Wait for tall spikes to retract · F = fire','Springs launch you. Cracked platforms crumble.','Watch for spinning saws and ranged enemies.','Blue platforms drift. Ride them across.','The lighthouse guardian waits in the final arena.'][region]});
         if (arena) signs.push({x:x+230,text:'THE LIGHTHOUSE GUARDIAN · Fire with F or J · Keep moving'});
       }
     }
     const width=ROOM*ROOMS_PER_REGION*themes.length,finish=width-260;
     const boss={x:finish-430,y:444,w:82,h:106,health:7,maxHealth:7,cooldown:1.8,invulnerable:0,dead:false};
-    return {platforms,hazards,enemies,shooters,saws,springs,boss,coins,checkpoints,signs,width,finish};
+    return {platforms,hazards,enemies,shooters,saws,springs,spikeGates,boss,coins,checkpoints,signs,width,finish};
   }
   const api={ROOM,ROOMS_PER_REGION,SPEED,themes,buildLevel};
   if (typeof module!=='undefined' && module.exports) module.exports=api;

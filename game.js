@@ -21,7 +21,7 @@
     game=new SkylineEngine.Game(resume?saved:null);camera=Math.max(0,game.player.x-W*.28);particles=[];mode='playing';accumulator=0;keys={left:false,right:false,shoot:false};jump=false;
     $('overlay').hidden=true;canvas.focus();$('pause').textContent='Ⅱ';$('pause').setAttribute('aria-label','Pause game');
     if(!resume){saved=game.save();write(STORE,saved);}
-    notice(resume?'Welcome back. Your checkpoint is ready.':'Move → · Space to double jump · F to shoot');
+    notice(resume?'Welcome back. Your checkpoint is ready.':'Move → · Space to jump · F to shoot · Wait for tall spikes to retract');
   }
   function pause() {
     if(mode==='title'||mode==='won')return;
@@ -48,7 +48,8 @@
   }
   function burst(x,y,color,count=10){for(let i=0;i<count;i++)particles.push({x,y,vx:(Math.random()-.5)*170,vy:-Math.random()*170,life:.6,color});}
   function events(){for(const event of game.events.splice(0)) {
-    if(event==='jump'){tone(game.player.jumps===2?510:350);burst(game.player.x+15,game.player.y+44,'#e8f5cf',6);}
+    if(event==='jump'){tone(350);burst(game.player.x+15,game.player.y+44,'#e8f5cf',6);}
+    if(event==='gateHit')notice('Wait for the tall spikes to retract, then run through');
     if(event==='coin'){tone(850,.12);burst(game.player.x+15,game.player.y+20,'#e7ef9a',5);}
     if(event==='stomp'){tone(200);burst(game.player.x+15,game.player.y+44,'#c8e7ce');}
     if(event==='shoot')tone(690,.055,'triangle',.015);
@@ -102,6 +103,22 @@
       if(active){ctx.fillStyle='#d8f29122';ctx.beginPath();ctx.arc(c.x+3,520,35,0,Math.PI*2);ctx.fill();}
     }
     for(const h of game.level.hazards.filter(visible)){for(let x=h.x;x<h.x+h.w;x+=13)poly([[x,h.y+h.h],[x+6,h.y],[x+13,h.y+h.h]],'#f6ab90');}
+    for(const gate of game.level.spikeGates.filter(visible)){
+      round(gate.x-8,gate.baseY-10,gate.w+16,10,4,'#405363');
+      if(gate.warning){ctx.globalAlpha=.35+.25*Math.sin(visualTime*18);round(gate.x-3,160,gate.w+6,390,8,'#f2b098');ctx.globalAlpha=1;}
+      if(gate.h<=2)continue;
+      round(gate.x,gate.y,gate.w,gate.h,8,gate.kind==='rotor'?'#6b607f':'#8a5b65');
+      for(let y=gate.baseY-20;y>gate.y+20;y-=38){
+        poly([[gate.x+2,y],[gate.x-16,y-18],[gate.x+2,y-28]],'#f4c8aa');
+        poly([[gate.x+gate.w-2,y],[gate.x+gate.w+16,y-18],[gate.x+gate.w-2,y-28]],'#f4c8aa');
+      }
+      poly([[gate.x+3,gate.y+12],[gate.x+gate.w/2,gate.y-18],[gate.x+gate.w-3,gate.y+12]],'#f6d4b5');
+      if(gate.kind==='rotor'){
+        ctx.save();ctx.translate(gate.x+gate.w/2,gate.y+55);ctx.rotate(visualTime*5);
+        for(let i=0;i<8;i++){const a=i*Math.PI/4;poly([[Math.cos(a-.23)*19,Math.sin(a-.23)*19],[Math.cos(a)*31,Math.sin(a)*31],[Math.cos(a+.23)*19,Math.sin(a+.23)*19]],'#e9dbc1');}
+        ctx.fillStyle='#463e57';ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill();ctx.restore();
+      } else {for(let y=gate.y+30;y<gate.baseY-20;y+=52)round(gate.x+11,y,gate.w-22,9,3,'#d8a0a0');}
+    }
     for(const s of game.level.springs.filter(visible)){round(s.x,s.y,s.w,s.h,4,'#4c9f96');round(s.x+3,s.y-4,s.w-6,7,3,'#d7f3af');for(let x=s.x+8;x<s.x+s.w-5;x+=13)ctx.fillRect(x,s.y+7,5,5);}
     for(const s of game.level.saws.filter(visible)){const cx=s.x+19,cy=s.y+19;ctx.save();ctx.translate(cx,cy);ctx.rotate(visualTime*5);for(let i=0;i<8;i++){const a=i*Math.PI/4;poly([[Math.cos(a-.2)*15,Math.sin(a-.2)*15],[Math.cos(a)*25,Math.sin(a)*25],[Math.cos(a+.2)*15,Math.sin(a+.2)*15]],'#dce5d7');}ctx.fillStyle='#6e8790';ctx.beginPath();ctx.arc(0,0,17,0,Math.PI*2);ctx.fill();ctx.fillStyle='#dce5d7';ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();ctx.restore();}
     for(const e of game.level.enemies.filter(visible)){if(e.dead)continue;round(e.x,e.y,e.w,e.h,11,'#d48474');round(e.x+3,e.y+4,26,9,5,'#f0b797');ctx.fillStyle='#243d40';ctx.fillRect(e.x+(e.dir>0?23:5),e.y+8,4,4);for(let i=0;i<3;i++){ctx.fillRect(e.x+5+i*9,e.y+21+Math.sin(visualTime*12+i)*2,3,6);}}
